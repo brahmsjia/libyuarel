@@ -34,7 +34,7 @@ extern "C" {
  * Note: to make sure that no strings are copied, the first slash "/" in the
  * path will be used to null terminate the hostname if no port is supplied.
  */
-struct yuarel {
+typedef struct yuarel {
 	char *scheme; /* scheme, without ":" and "//" */
 	char *username; /* username, default: NULL */
 	char *password; /* password, default: NULL */
@@ -43,13 +43,13 @@ struct yuarel {
 	char *path; /* path, without leading "/", default: NULL */
 	char *query; /* query, default: NULL */
 	char *fragment; /* fragment, default: NULL */
-};
+} TS_YL;
 
 /* A struct to hold the query string parameter values. */
-struct yuarel_param {
+typedef struct yuarel_param {
 	char *key;
 	char *val;
-};
+} TS_YP;
 
 /**
  * Parse a URL to a struct.
@@ -107,6 +107,15 @@ extern int yuarel_split_path(char *path, char **parts, int max_parts);
  * Returns the number of parsed items. -1 on error.
  */
 extern int yuarel_parse_query(char *query, char delimiter, struct yuarel_param *params, int max_params);
+
+/**
+ * yp 存放的是 yp 结构数组。末位元素的key==NULL时停止遍历。
+ * json 存放的是 json 字符串
+ */
+char * build_json(TS_YP * yp, char * json);
+char * build_query(TS_YP * yp, char * q );
+char * php_url_decode(char *s);
+char * php_url_encode(char const *s, char *d);
 
 #ifdef __cplusplus
 }

@@ -36,7 +36,7 @@ install: all
 
 .PHONY: examples
 examples: examples/simple.c
-	$(CC) examples/simple.c -l$(LIBNAME) -o simple
+	$(CC) examples/simple.c -Ibuild/include -lbuild/lib -o simple
 
 .PHONY: check
 check:

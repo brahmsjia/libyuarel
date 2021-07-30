@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "yuarel.h"
 
 /**
@@ -290,5 +291,140 @@ yuarel_parse_query(char *query, char delimiter, struct yuarel_param *params, int
 		*(params[i - 1].val)++ = '\0';
 	}
 
-	return i;
+    int n = i;
+    while (i-- > 0) {
+        printf("-------%s\n", params[i].val==NULL?"":params[i].val);
+        php_url_decode(params[i].val);
+        printf("+++++++%s\n", params[i].val==NULL?"":params[i].val);
+    }
+
+	return n;
 }
+
+char * build_json(TS_YP * yp, char * q )
+{
+    int i=0;
+    char *p = q;
+    *p++ = '{';
+    char sep[2] = {'\0'};
+    while (NULL != yp[i].key) {
+        printf("%s: %s\n", yp[i].key, yp[i].val == NULL ? "": yp[i].val);
+        sep[0] = i == 0 ? '\0' : ',';
+        sprintf(p, "%s\"%s\":\"%s\"", sep, yp[i].key, yp[i].val == NULL ? "": yp[i].val);
+        p += (int)strlen(p);
+        i++;
+    }
+    *p = '}';
+    return q;
+} 
+
+char * build_query(TS_YP * yp, char * q )
+{
+    int i=0;
+    char *p = q;
+    char sep[2] = {'\0'};
+    char encode[256] = {'\0'};
+    while (NULL != yp[i].key) {
+        sep[0] = i == 0 ? '\0' : '&';
+        sprintf(p, "%s%s=%s", sep, yp[i].key, yp[i].val == NULL ? "": php_url_encode(yp[i].val,encode));
+        p += (int)strlen(p);
+        i++;
+    }
+    return q;
+} 
+
+static unsigned char HEXCHARS[] = "0123456789ABCDEF";
+/**
+ *  *  * 16进制数转换成10进制数
+ *   *   * 如：0xE4=14*16+4=228
+ *    *    */
+static int php_htoi(char *s)
+{
+    int value;
+    int c;
+
+    c = ((unsigned char *)s)[0];
+    if (isupper(c))
+        c = tolower(c);
+    value = (c >= '0' && c <= '9' ? c - '0' : c - 'a' + 10) * 16;
+
+    c = ((unsigned char *)s)[1];
+    if (isupper(c))
+        c = tolower(c);
+    value += c >= '0' && c <= '9' ? c - '0' : c - 'a' + 10;
+
+    return (value);
+}
+
+char * php_url_encode(char const *s, char *d)
+{
+    register unsigned char c;
+    char *to, *start;
+    char const *from, *end;
+    
+    from = s;
+    end  = s + strlen(s);
+    start = to = d;
+
+    while (from < end) 
+    {
+        c = *from++;
+
+        if (c == ' ') 
+        {
+            *to++ = '+';
+        } 
+        else if ((c < '0' && c != '-' && c != '.') ||
+                 (c < 'A' && c > '9') ||
+                 (c > 'Z' && c < 'a' && c != '_') ||
+                 (c > 'z')) 
+        {
+            to[0] = '%';
+            to[1] = HEXCHARS[c >> 4];//将2进制转换成16进制表示
+            to[2] = HEXCHARS[c & 15];//将2进制转换成16进制表示
+            to += 3;
+        }
+        else 
+        {
+            *to++ = c;
+        }
+    }
+    *to = 0;
+    return start;
+}
+
+/**
+ *  * 更改源串内容
+ *   * 返回解码后的串
+ *    */
+char * php_url_decode(char *s)
+{
+    char *dest = s;
+    char *data = s;
+
+    if (s==NULL) return NULL;
+
+    int len = strlen(s);
+    while (len--) 
+    {
+        if (*data == '+') 
+        {
+            *dest = ' ';
+        }
+        else if (*data == '%' && len >= 2 && isxdigit((int) *(data + 1)) && isxdigit((int) *(data + 2))) 
+        {
+            *dest = (char) php_htoi(data + 1);
+            data += 2;
+            len -= 2;
+        } 
+        else 
+        {
+            *dest = *data;
+        }
+        data++;
+        dest++;
+    }
+    *dest = '\0';
+    return s;
+}
+

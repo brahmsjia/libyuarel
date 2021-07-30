@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <yuarel.h>
+#include "../yuarel.h"
 
 int main(void)
 {
